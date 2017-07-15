@@ -17,7 +17,9 @@ class Listener
 		bool InitListener(Worker *worker,const char* host,const char *serv);
 		void AddListenEvent();
 		static void ListenEventCb(evutil_socket_t fd,short event,void *arg); 
+		
 	public:
+		
 		Worker *listen_worker;
 		evutil_socket_t listen_sockfd;
 		struct sockaddr_in listen_addr;

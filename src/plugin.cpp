@@ -2,6 +2,8 @@
 #include "worker.h"
 #include "connection.h"
 
+
+
 Plugin::Plugin()
 {
 	plugin_data	= NULL;
@@ -46,11 +48,6 @@ bool Plugin::ResponseEnd(Connection *con, int index)
 }
 
 void Plugin::Close(Connection *con, int index)	{}
-
-bool Plugin::Trigger(Worker* worker, int index)
-{
-	return true;
-}
 
 bool Plugin::LoadPlugin(Worker* worker, int index)
 {

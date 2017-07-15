@@ -69,7 +69,7 @@ class PluginStatic:public Plugin//继承Plugin基类
 		else
 		{
 			std::string path=request->http_url.substr(1);
-			if(access(path.c_str(),R_OK)==-1)
+			if(access(path.c_str(),R_OK)==-1)//路径是否存在
 			{
 				data->s_state=NOT_EXIST;
 			}
@@ -87,32 +87,32 @@ class PluginStatic:public Plugin//继承Plugin基类
         
         if(data->s_state==INIT)
         {
-			data->s_state=READ;
-			data->s_fd=open(request->http_url.substr(1).c_str(),O_RDONLY);
+			data->s_state=READ;//进入读状态
+			data->s_fd=open(request->http_url.substr(1).c_str(),O_RDONLY);//打开指定路径文件
 		}
-		else if(data->s_state==NOT_ACCESS)
+		else if(data->s_state==NOT_ACCESS)//不可访问
 		{
 			con->http_response.http_code    = 404;
             con->http_response.http_phrase 	= "Access Deny";
             return PLUGIN_READY;
 		}
-		else if (data->s_state == NOT_EXIST)
+		else if (data->s_state == NOT_EXIST)//不存在
         {
             con->http_response.http_code    = 403;
             con->http_response.http_phrase 	= "File don't exist";
             return PLUGIN_READY;
         }
-		int ret = read(data->s_fd, &data->s_buf[0], data->s_buf.capacity());
+		int ret = read(data->s_fd, &data->s_buf[0], data->s_buf.capacity());//开始读文件
 
-        if (ret <= 0)
+        if (ret <= 0)//读完成
         {
-            data->s_state = DONE;
-            con->http_response.http_body += data->s_data;
+            data->s_state = DONE;//状态更新
+            con->http_response.http_body += data->s_data;//在响应报文实体加入数据
             return PLUGIN_READY;
         }
         else
         {
-            data->s_data.append(&data->s_buf[0], 0, ret);
+            data->s_data.append(&data->s_buf[0], 0, ret);//将读出来的数据加入缓冲区
             return PLUGIN_NOT_READY;
         }
 	}
@@ -120,11 +120,11 @@ class PluginStatic:public Plugin//继承Plugin基类
     {
         static_data_t *data = static_cast<static_data_t*>(con->plugin_data_slots[index]);
 
-        if (data->s_state == DONE)
+        if (data->s_state == DONE)//响应完成
         {
-            close(data->s_fd);
+            close(data->s_fd);//关闭文件描述符
             data->s_fd = -1;
-            data->s_data.clear();
+            data->s_data.clear();//清空缓冲区数据
         }
         
         return true;
@@ -135,7 +135,7 @@ class PluginStatic:public Plugin//继承Plugin基类
 
         if (data->s_fd != -1)
         {
-            close(data->s_fd);
+            close(data->s_fd);//关闭文件描述符
         }
 
         delete data;

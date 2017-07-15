@@ -35,9 +35,11 @@ struct HttpResponse
 class HttpParser
 {
 	public:
+		//解析器初始化
 		void InitParser(Connection *con);
 		int HttpParserRequest(const std::string &buf);
 	private:
+		//回调函数
 		static int OnMessageBeginCallback(http_parser *parser);
         static int OnUrlCallback(http_parser *parser, const char *at, size_t length);
         static int OnHeaderFieldCallback(http_parser *parser, const char *at, size_t length);
@@ -46,6 +48,7 @@ class HttpParser
         static int OnBodyCallback(http_parser *parser, const char *at, size_t length);
         static int OnMessageCompleteCallback(http_parser *parser);
     private:
+		//解析器
     	http_parser		parser;
         http_parser_settings	settings;
 		

@@ -39,8 +39,8 @@ void HttpResponse::ResetResponse()
 
 void HttpParser::InitParser(Connection *con)
 {
-    bzero(&settings, sizeof(settings));   
-    settings.on_message_begin    = OnMessageBeginCallback;
+    bzero(&settings, sizeof(settings));//清空settings   
+    settings.on_message_begin    = OnMessageBeginCallback;//解析回调函数
     settings.on_url              = OnUrlCallback; 
     settings.on_header_field     = OnHeaderFieldCallback;
     settings.on_header_value     = OnHeaderValueCallback;
@@ -55,7 +55,7 @@ void HttpParser::InitParser(Connection *con)
 
 int HttpParser::HttpParserRequest(const std::string &inbuf)
 {
-    int nparsed = http_parser_execute(&parser, &settings, inbuf.c_str(), inbuf.size());
+    int nparsed = http_parser_execute(&parser, &settings, inbuf.c_str(), inbuf.size());//执行解析器
 
     if (parser.http_errno != HPE_OK)
     {
@@ -69,7 +69,7 @@ int HttpParser::OnMessageBeginCallback(http_parser *parser)
 {
     Connection *con = static_cast<Connection*>(parser->data);
     
-    con->http_req_parser = new HttpRequest();
+    con->http_req_parser = new HttpRequest();//得到请求
     
     return 0;
 }
@@ -78,7 +78,7 @@ int HttpParser::OnUrlCallback(http_parser *parser, const char *at, size_t length
 {
     Connection *con = static_cast<Connection*>(parser->data);
     
-    con->http_req_parser->http_url.assign(at, length);
+    con->http_req_parser->http_url.assign(at, length);//得到URL
 
     return 0;
 }
@@ -87,7 +87,7 @@ int HttpParser::OnHeaderFieldCallback(http_parser *parser, const char *at, size_
 {
     Connection *con = static_cast<Connection*>(parser->data);
     
-    con->http_req_parser->http_header_field.assign(at, length);
+    con->http_req_parser->http_header_field.assign(at, length);//得到头部域
 
     return 0;
 }
@@ -97,7 +97,7 @@ int HttpParser::OnHeaderValueCallback(http_parser *parser, const char *at, size_
     Connection	*con  = static_cast<Connection*>(parser->data);
     HttpRequest *request = con->http_req_parser;
     
-    request->http_headers[request->http_header_field] = std::string(at, length);
+    request->http_headers[request->http_header_field] = std::string(at, length);//得到头部域的值
 
     return 0;
 }
@@ -106,7 +106,7 @@ int HttpParser::OnHeadersCompleteCallback(http_parser *parser)
 {
     Connection	*con = static_cast<Connection*>(parser->data);
     HttpRequest *request = con->http_req_parser;
-    request->http_method = http_method_str((http_method)parser->method);
+    request->http_method = http_method_str((http_method)parser->method);//得到HTTP请求方法
     return 0;
 }
 
@@ -115,17 +115,17 @@ int HttpParser::OnBodyCallback(http_parser *parser, const char *at, size_t lengt
     Connection *con = static_cast<Connection*>(parser->data);
     
     // NOTICE:OnBody may be called many times per Reuqest
-    con->http_req_parser->http_body.append(at, length); 
+    con->http_req_parser->http_body.append(at, length); //得到HTTP实体
      
     return 0;
 }
 
 int HttpParser::OnMessageCompleteCallback(http_parser *parser)
 {
-    Connection	*con  = static_cast<Connection*>(parser->data);
+    Connection	*con  = static_cast<Connection*>(parser->data);//解析完成
     HttpRequest *request = con->http_req_parser;
     
-    con->req_queue.push(request);
+    con->req_queue.push(request);//将请求放入con的队列
     con->http_req_parser = NULL;
 
     std::cout << __FUNCTION__ << std::endl;

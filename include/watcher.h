@@ -11,17 +11,17 @@ class Watcher
 		~Watcher();
 		
 		bool StartWatcher(const char *host,const char *serv);
-		static void WatcherExitSignal(evutil_socket_t signo,short event,void *arg);//处理SIGINT
-		static void WatcherChldSignal(evutil_socket_t signo,short event,void *arg);//处理SIGCHLD
+		static void WatcherExitSignal(evutil_socket_t signo,short event,void *arg);//处理SIGINT的回调函数
+		static void WatcherChldSignal(evutil_socket_t signo,short event,void *arg);//处理SIGCHLD的回调函数
 	public:
 		Worker worker;
 		typedef std::vector<std::string> plugin_list_t;
-		plugin_list_t PluginList;
+		plugin_list_t PluginList;//插件链表
 	private:
-		int num_childs;
-		struct event_base *wc_ebase;
-		struct event *wc_exitEvent;
-		struct event *wc_chldEvent;
+		int num_childs;//worker(子进程)个数
+		struct event_base *wc_ebase;//Reactor
+		struct event *wc_exitEvent;//中断事件
+		struct event *wc_chldEvent;//子进程事件
 		
 };
 

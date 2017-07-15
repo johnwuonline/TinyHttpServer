@@ -17,20 +17,20 @@ Worker::Worker()
 
 Worker::~Worker()
 {
-	UnloadPlugins();
+	UnloadPlugins();//卸载插件
 	if(wk_exitEvent)
 		event_free(wk_exitEvent);
 	if(wk_ebase)
 	{
-		for(int i=0;i<con_pool_cur;++i)
-	{
-			Connection *con=con_pool[i];
-			delete con;
-		}
-		event_base_free(wk_ebase);
-		std::cout<< "----total connection: " << wk_listener.listen_con_cnt << "----" << std::endl;
+			for(int i=0;i<con_pool_cur;++i)//释放连接池
+		  {
+				Connection *con=con_pool[i];
+				delete con;
+			}
+			event_base_free(wk_ebase);
+			std::cout<< "----total connection: " << wk_listener.listen_con_cnt << "----" << std::endl;
 	}
-	RemovePlugins();
+	RemovePlugins();//移除插件
 	std::cout<<"Worker Ended"<< std::endl;
 }
 
@@ -41,15 +41,16 @@ void Worker::Run()
 	wk_listener.AddListenEvent();
 	wk_exitEvent=evsignal_new(wk_ebase,SIGINT,WorkerExitSignal,wk_ebase);
 	evsignal_add(wk_exitEvent,NULL);
-	event_base_dispatch(wk_ebase);
+	event_base_dispatch(wk_ebase);//事件循环
 	return; 
 }
 
+/*监控进程初始化*/
 bool Worker::Init(Watcher *wc,const char *host,const char *serv)
 {
 	wk_wc=wc;
-	InitConPool();
-	if (!wk_listener.InitListener(this,host,serv))
+	InitConPool();//初始化连接池
+	if (!wk_listener.InitListener(this,host,serv))//建立监听套接字
 	{
 		std::cerr<<"Worker: Listener::InitListener()"<< std::endl;
 		return false;
@@ -66,6 +67,7 @@ void Worker::WorkerExitSignal(evutil_socket_t signo,short event,void *arg)
 {
 	event_base_loopexit((struct event_base*)arg,NULL);
 }
+/*设置插件*/
 bool Worker::SetupPlugins()
 {
 	std::string path;
@@ -74,13 +76,13 @@ bool Worker::SetupPlugins()
 	{
 		path=wk_wc->PluginList[i];
 		
-		void *so=dlopen(path.c_str(),RTLD_LAZY);
+		void *so=dlopen(path.c_str(),RTLD_LAZY);//加载指定共享库文件，得到映射句柄
 		if(!so)
 		{
 			std::cerr << dlerror() << std::endl;
 			return false;
 		}
-		Plugin::SetupPlugin setup_plugin = (Plugin::SetupPlugin)dlsym(so, "SetupPlugin");
+		Plugin::SetupPlugin setup_plugin = (Plugin::SetupPlugin)dlsym(so, "SetupPlugin");//返回加载库内指定符号的地址指针
 		Plugin::RemovePlugin remove_plugin = (Plugin::RemovePlugin)dlsym(so, "RemovePlugin");
 		if (!setup_plugin || !remove_plugin)
 		{
@@ -99,14 +101,25 @@ bool Worker::SetupPlugins()
 		plugin->remove_plugin = remove_plugin;
 		plugin->plugin_so = so;
 		plugin->plugin_index = i;
-		//为插件分配空间 
-		w_plugins = static_cast<Plugin* *> (realloc(w_plugins, sizeof(*w_plugins)*(w_plugin_cnt+1))); 
-		w_plugins[w_plugin_cnt++] = plugin;//添加插件 
+		//为插件分配空间
+		Plugin* *temp=static_cast<Plugin* *>(realloc(w_plugins, sizeof(*w_plugins)*(w_plugin_cnt+1)));
+		if(temp!=NULL)
+		{
+			w_plugins=temp;
+			w_plugins[w_plugin_cnt++] = plugin;//添加插件
+		}
+		else
+		{
+			free(w_plugins);
+			std::cerr << "Error rellocating memory" << std::endl;
+			return false;
+		}
 
 	}
 	return true;
 }
 
+/*加载插件*/
 bool Worker::LoadPlugins()
 {
 	Plugin *plugin;
@@ -135,8 +148,8 @@ void Worker::RemovePlugins()
 		plugin = w_plugins[i];
 		Plugin::RemovePlugin remove_plugin = plugin->remove_plugin;
 		void *so = plugin->plugin_so;
-		remove_plugin(plugin);
-		dlclose(so);
+		remove_plugin(plugin);//释放插件实例
+		dlclose(so);//释放共享库
 	}
 	free(w_plugins);
 }
@@ -154,14 +167,16 @@ void Worker::UnloadPlugins()
 		}
 	}
 }
-
+/*初始化连接池:使用vector<Connection*>实现
+连接池大小:200
+*/
 void Worker::InitConPool()
 {
 	con_pool_size=200;
 	con_pool_cur=0;
 	con_pool.resize(con_pool_size);
 }
-
+/*取空闲的一个连接*/
 Connection* Worker::GetFreeCon()
 {
 	Connection *con=NULL;
@@ -180,7 +195,7 @@ bool Worker::AddConToFreePool(Connection *con)
 		con_pool.at(con_pool_cur++)=con;
 		res=true;
 	}
-	else
+	else//连接池已满，重新分配空间
 	{
 		size_t newsize=con_pool_size*2;
 		con_pool.resize(newsize);
@@ -190,11 +205,12 @@ bool Worker::AddConToFreePool(Connection *con)
 	}
 	return res;
 }
+
 void Worker::FreeCon(Connection *con)
 {
 	delete con;
 }
-
+/*关闭连接*/
 void Worker::CloseCon(Connection *con)
 {
 	std::cout<<"Worker::CloseCon"<<std::endl;
@@ -204,8 +220,8 @@ void Worker::CloseCon(Connection *con)
 		ConnectionMap::iterator con_iter=worker->wk_con_map.find(con->con_sockfd);
 		worker->wk_con_map.erase(con_iter);
 	}
-	con->ResetCon();
-	if(!worker->AddConToFreePool(con))
+	con->ResetCon();//清空连接数据
+	if(!worker->AddConToFreePool(con))//将连接释放到连接池
 		FreeCon(con);
 	return;
 }
