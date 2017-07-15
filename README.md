@@ -34,7 +34,7 @@ $ ./TinyHttpServer
 
 使用：
 
-浏览器访问：http://127.0.0.1:9775/htdocs/index.htm
+浏览器访问：http://127.0.0.1:9775/htdocs/index.html
 
 压力测试：
 
