@@ -8,7 +8,8 @@
 第三方库：libevent HttpParser
 
 特性：
-1. 采用watcher-worker模式，watcher负责监控子进程，worker负责客户端处理连接请求。
+
+1.采用watcher-worker模式，watcher负责监控子进程，worker负责客户端处理连接请求。
 
 2.利用高性能Libevent网络库实现同步事件循环+非阻塞IO(Reactor模型)。
 
